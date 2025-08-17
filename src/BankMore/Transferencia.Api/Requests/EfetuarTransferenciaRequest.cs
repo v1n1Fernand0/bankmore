@@ -1,8 +1,9 @@
-﻿namespace BankMore.Transferencia.Api.Requests;
+﻿namespace BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
 
 public sealed class EfetuarTransferenciaRequest
 {
-    public Guid Idempotencia { get; set; }
-    public int NumeroContaDestino { get; set; }
+    public Guid Idempotencia { get; set; } = Guid.NewGuid();
+    public Guid ContaOrigemId { get; set; }
+    public int NumeroContaDestino { get; set; } 
     public decimal Valor { get; set; }
 }

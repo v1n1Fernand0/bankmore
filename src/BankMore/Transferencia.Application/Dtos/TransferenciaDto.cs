@@ -2,9 +2,9 @@
 
 public sealed class TransferenciaDto
 {
-    public Guid IdTransferencia { get; set; }
-    public Guid IdContaOrigem { get; set; }
-    public Guid IdContaDestino { get; set; }
+    public Guid Id { get; set; }
+    public Guid ContaOrigemId { get; set; }    
+    public int NumeroContaDestino { get; set; }   
     public decimal Valor { get; set; }
     public DateTime Data { get; set; }
 }

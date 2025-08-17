@@ -1,21 +1,22 @@
 ﻿namespace BankMore.Transferencia.Domain.Entities;
 
-public class TransferenciaRegistro
+public sealed class TransferenciaRegistro
 {
-    public Guid IdTransferencia { get; private set; }
-    public Guid IdContaOrigem { get; private set; }
-    public Guid IdContaDestino { get; private set; }
+    public Guid Id { get; private set; }
+    public Guid ContaOrigemId { get; private set; }  
+    public int NumeroContaDestino { get; private set; } 
     public decimal Valor { get; private set; }
     public DateTime Data { get; private set; }
 
-    private TransferenciaRegistro() { }
+    private TransferenciaRegistro() { } 
 
-    public TransferenciaRegistro(Guid idOrigem, Guid idDestino, decimal valor)
+    public TransferenciaRegistro(Guid contaOrigemId, int numeroContaDestino, decimal valor)
     {
-        IdTransferencia = Guid.NewGuid();
-        IdContaOrigem = idOrigem;
-        IdContaDestino = idDestino;
+        Id = Guid.NewGuid();
+        ContaOrigemId = contaOrigemId;
+        NumeroContaDestino = numeroContaDestino;
         Valor = valor;
         Data = DateTime.UtcNow;
     }
 }
+

@@ -1,9 +1,8 @@
-﻿using MediatR;
-using BankMore.Shared;
-using BankMore.Transferencia.Domain.Interfaces;
+﻿using BankMore.Shared;
 using BankMore.Transferencia.Domain.Entities;
+using BankMore.Transferencia.Domain.Interfaces;
+using MediatR;
 using System.Net.Http.Json;
-using System.Net.Http;
 
 namespace BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
 
@@ -27,9 +26,9 @@ public sealed class EfetuarTransferenciaHandler
         var debito = new
         {
             Idempotencia = request.Idempotencia,
-            NumeroConta = (int?)null,
+            ContaId = request.ContaOrigemId,
             Valor = request.Valor,
-            Tipo = 'D'
+            Tipo = "D"
         };
 
         var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/contas/movimentar")
@@ -47,7 +46,7 @@ public sealed class EfetuarTransferenciaHandler
             Idempotencia = Guid.NewGuid(),
             NumeroConta = request.NumeroContaDestino,
             Valor = request.Valor,
-            Tipo = 'C'
+            Tipo = "C"
         };
 
         httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/contas/movimentar")
@@ -63,9 +62,9 @@ public sealed class EfetuarTransferenciaHandler
             var estorno = new
             {
                 Idempotencia = Guid.NewGuid(),
-                NumeroConta = (int?)null,
+                ContaId = request.ContaOrigemId,
                 Valor = request.Valor,
-                Tipo = 'C'
+                Tipo = "C"
             };
 
             var estornoReq = new HttpRequestMessage(HttpMethod.Post, "api/contas/movimentar")
@@ -78,7 +77,12 @@ public sealed class EfetuarTransferenciaHandler
             return Result<Unit>.Fail("TRANSFER_ERROR: Falha ao creditar conta destino");
         }
 
-        var transferencia = new TransferenciaRegistro(request.ContaOrigemId, Guid.NewGuid(), request.Valor);
+        var transferencia = new TransferenciaRegistro(
+            request.ContaOrigemId,
+            request.NumeroContaDestino,
+            request.Valor
+        );
+
         await _repository.AdicionarAsync(transferencia);
 
         return Result<Unit>.Ok(Unit.Value);

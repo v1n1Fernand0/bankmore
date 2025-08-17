@@ -1,47 +1,44 @@
-﻿using BankMore.Transferencia.Api.Requests;
-using BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
+﻿using BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace BankMore.Transferencia.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TransferenciasController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public TransferenciasController(IMediator mediator) => _mediator = mediator;
-
-    [HttpPost]
-    [Authorize]
-    [ProducesResponseType(204)]
-    [ProducesResponseType(400)]
-    [ProducesResponseType(403)]
-    public async Task<IActionResult> Transferir([FromBody] EfetuarTransferenciaRequest request)
+    public TransferenciasController(IMediator mediator)
     {
-        var contaId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                      ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        _mediator = mediator;
+    }
 
-        if (contaId is null)
-            return Forbid();
+    /// <summary>
+    /// Efetua uma transferência entre contas
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> EfetuarTransferencia([FromBody] EfetuarTransferenciaRequest request)
+    {
+        var jwtToken = Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
 
-        var command = new EfetuarTransferenciaCommand(
-            request.Idempotencia,
-            request.NumeroContaDestino,
-            request.Valor,
-            Guid.Parse(contaId),
-            Request.Headers["Authorization"]!
-        );
+        var command = new EfetuarTransferenciaCommand
+        {
+            ContaOrigemId = request.ContaOrigemId,
+            NumeroContaDestino = request.NumeroContaDestino,
+            Valor = request.Valor,
+            Idempotencia = request.Idempotencia,
+            JwtToken = jwtToken
+        };
 
         var result = await _mediator.Send(command);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error, type = "TRANSFER_ERROR" });
+            return BadRequest(result.Error);
 
-        return NoContent();
+        return Ok(new { message = "Transferência realizada com sucesso" });
     }
 }
