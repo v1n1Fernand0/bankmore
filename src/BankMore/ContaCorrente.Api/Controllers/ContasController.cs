@@ -5,6 +5,7 @@ using BankMore.ContaCorrente.Application.Commands.Login;
 using BankMore.ContaCorrente.Application.Commands.MovimentarConta;
 using BankMore.ContaCorrente.Application.Dtos;
 using BankMore.ContaCorrente.Application.Queries.ObterSaldo;
+using ContaCorrente.Api.Requests;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,10 +25,9 @@ public class ContasController : ControllerBase
     /// <summary>
     /// Cadastra uma nova conta corrente
     /// </summary>
-    /// <param name="command">Dados da conta</param>
-    /// <returns>ContaCorrenteDto</returns>
     [HttpPost]
-    [ProducesResponseType(typeof(ContaCorrenteDto), 200)]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ContaCorrenteDto), 201)]
     [ProducesResponseType(400)]
     public async Task<IActionResult> Cadastrar([FromBody] CadastrarContaCommand command)
     {
@@ -36,13 +36,14 @@ public class ContasController : ControllerBase
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Error, type = "INVALID_DOCUMENT" });
 
-        return Ok(result.Value);
+        return CreatedAtAction(nameof(Saldo), new { }, result.Value);
     }
 
     /// <summary>
     /// Efetua login e retorna token JWT
     /// </summary>
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponseDto), 200)]
     [ProducesResponseType(401)]
     public async Task<IActionResult> Login([FromBody] LoginCommand command)
@@ -63,7 +64,7 @@ public class ContasController : ControllerBase
     [ProducesResponseType(204)]
     [ProducesResponseType(400)]
     [ProducesResponseType(403)]
-    public async Task<IActionResult> Inativar([FromBody] string senha)
+    public async Task<IActionResult> Inativar([FromBody] InativarContaRequest request)
     {
         var contaId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                       ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
@@ -71,11 +72,11 @@ public class ContasController : ControllerBase
         if (contaId is null)
             return Forbid();
 
-        var command = new InativarContaCommand(Guid.Parse(contaId), senha);
+        var command = new InativarContaCommand(Guid.Parse(contaId), request.Senha);
         var result = await _mediator.Send(command);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new { message = result.Error, type = "USER_UNAUTHORIZED" });
 
         return NoContent();
     }
@@ -107,7 +108,7 @@ public class ContasController : ControllerBase
         var result = await _mediator.Send(command);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new { message = result.Error, type = "INVALID_OPERATION" });
 
         return NoContent();
     }
@@ -132,7 +133,7 @@ public class ContasController : ControllerBase
         var result = await _mediator.Send(query);
 
         if (!result.IsSuccess)
-            return BadRequest(new { message = result.Error });
+            return BadRequest(new { message = result.Error, type = "INVALID_OPERATION" });
 
         return Ok(result.Value);
     }
