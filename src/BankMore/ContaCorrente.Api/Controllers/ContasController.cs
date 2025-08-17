@@ -1,4 +1,5 @@
 ﻿using BankMore.ContaCorrente.Application.Commands.CadastrarConta;
+using BankMore.ContaCorrente.Application.Commands.Login;
 using BankMore.ContaCorrente.Application.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -27,6 +28,22 @@ public class ContasController : ControllerBase
 
         if (!result.IsSuccess)
             return BadRequest(new { message = result.Error, type = "INVALID_DOCUMENT" });
+
+        return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Efetua login e retorna token JWT
+    /// </summary>
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponseDto), 200)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> Login([FromBody] LoginCommand command)
+    {
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+            return Unauthorized(new { message = result.Error, type = "USER_UNAUTHORIZED" });
 
         return Ok(result.Value);
     }
