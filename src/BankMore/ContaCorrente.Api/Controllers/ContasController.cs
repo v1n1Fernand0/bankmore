@@ -1,8 +1,12 @@
 ﻿using BankMore.ContaCorrente.Application.Commands.CadastrarConta;
+using BankMore.ContaCorrente.Application.Commands.InativarConta;
 using BankMore.ContaCorrente.Application.Commands.Login;
 using BankMore.ContaCorrente.Application.Dtos;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace BankMore.ContaCorrente.Api.Controllers;
 
@@ -46,5 +50,30 @@ public class ContasController : ControllerBase
             return Unauthorized(new { message = result.Error, type = "USER_UNAUTHORIZED" });
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Inativa a conta corrente autenticada
+    /// </summary>
+    [HttpPost("inativar")]
+    [Authorize]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> Inativar([FromBody] string senha)
+    {
+        var contaId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (contaId is null)
+            return Forbid();
+
+        var command = new InativarContaCommand(Guid.Parse(contaId), senha);
+        var result = await _mediator.Send(command);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { message = result.Error });
+
+        return NoContent();
     }
 }
