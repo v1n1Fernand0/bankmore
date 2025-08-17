@@ -4,6 +4,7 @@ using BankMore.ContaCorrente.Application.Commands.InativarConta;
 using BankMore.ContaCorrente.Application.Commands.Login;
 using BankMore.ContaCorrente.Application.Commands.MovimentarConta;
 using BankMore.ContaCorrente.Application.Dtos;
+using BankMore.ContaCorrente.Application.Queries.ObterSaldo;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -109,5 +110,30 @@ public class ContasController : ControllerBase
             return BadRequest(new { message = result.Error });
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Consulta saldo da conta corrente autenticada
+    /// </summary>
+    [HttpGet("saldo")]
+    [Authorize]
+    [ProducesResponseType(typeof(SaldoDto), 200)]
+    [ProducesResponseType(400)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> Saldo()
+    {
+        var contaId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (contaId is null)
+            return Forbid();
+
+        var query = new ObterSaldoQuery(Guid.Parse(contaId));
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { message = result.Error });
+
+        return Ok(result.Value);
     }
 }
