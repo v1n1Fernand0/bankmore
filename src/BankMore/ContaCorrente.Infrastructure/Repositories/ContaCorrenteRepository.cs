@@ -20,9 +20,9 @@ public class ContaCorrenteRepository : IContaCorrenteRepository
 
     public async Task AdicionarAsync(Conta conta)
     {
-        const string sql = @"INSERT INTO contacorrente 
-            (idcontacorrente, numero, nome, ativo, senha, salt) 
-            VALUES (@IdContaCorrente, @Numero, @Nome, @Ativo, @SenhaHash, @Salt)";
+        const string sql = @"INSERT INTO ContaCorrente 
+            (IdContaCorrente, Numero, Nome, Cpf, Ativo, SenhaHash, Salt, Saldo) 
+            VALUES (@IdContaCorrente, @Numero, @Nome, @Cpf, @Ativo, @SenhaHash, @Salt, @Saldo)";
 
         using var conn = Connection;
         await conn.ExecuteAsync(sql, conta);
@@ -30,30 +30,34 @@ public class ContaCorrenteRepository : IContaCorrenteRepository
 
     public async Task<Conta?> ObterPorIdAsync(Guid id)
     {
-        const string sql = "SELECT * FROM contacorrente WHERE idcontacorrente = @id";
+        const string sql = "SELECT * FROM ContaCorrente WHERE IdContaCorrente = @id";
         using var conn = Connection;
         return await conn.QuerySingleOrDefaultAsync<Conta>(sql, new { id });
     }
 
     public async Task<Conta?> ObterPorNumeroAsync(int numero)
     {
-        const string sql = "SELECT * FROM contacorrente WHERE numero = @numero";
+        const string sql = "SELECT * FROM ContaCorrente WHERE Numero = @numero";
         using var conn = Connection;
         return await conn.QuerySingleOrDefaultAsync<Conta>(sql, new { numero });
     }
 
     public async Task<Conta?> ObterPorCpfAsync(string cpf)
     {
-        const string sql = "SELECT * FROM contacorrente WHERE cpf = @cpf";
+        const string sql = "SELECT * FROM ContaCorrente WHERE Cpf = @cpf";
         using var conn = Connection;
         return await conn.QuerySingleOrDefaultAsync<Conta>(sql, new { cpf });
     }
 
     public async Task AtualizarAsync(Conta conta)
     {
-        const string sql = @"UPDATE contacorrente 
-            SET nome = @Nome, ativo = @Ativo, senha = @SenhaHash, salt = @Salt 
-            WHERE idcontacorrente = @IdContaCorrente";
+        const string sql = @"UPDATE ContaCorrente 
+            SET Nome = @Nome, 
+                Ativo = @Ativo, 
+                SenhaHash = @SenhaHash, 
+                Salt = @Salt, 
+                Saldo = @Saldo
+            WHERE IdContaCorrente = @IdContaCorrente";
 
         using var conn = Connection;
         await conn.ExecuteAsync(sql, conta);

@@ -5,6 +5,7 @@ using BankMore.ContaCorrente.Application.Commands.MovimentarConta;
 using BankMore.ContaCorrente.Application.Dtos;
 using BankMore.ContaCorrente.Application.Queries.ObterSaldo;
 using ContaCorrente.Api.Requests;
+using ContaCorrente.Application.Queries.ObterExtrato;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -136,4 +137,29 @@ public class ContasController : ControllerBase
 
         return Ok(result.Value);
     }
+
+    /// <summary>
+    /// Lista as movimentações da conta autenticada (extrato)
+    /// </summary>
+    [HttpGet("extrato")]
+    [Authorize]
+    [ProducesResponseType(typeof(IEnumerable<MovimentoDto>), 200)]
+    [ProducesResponseType(403)]
+    public async Task<IActionResult> Extrato()
+    {
+        var contaId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+        if (contaId is null)
+            return Forbid();
+
+        var query = new ObterExtratoQuery(Guid.Parse(contaId));
+        var result = await _mediator.Send(query);
+
+        if (!result.IsSuccess)
+            return BadRequest(new { message = result.Error, type = "INVALID_OPERATION" });
+
+        return Ok(result.Value);
+    }
+
 }

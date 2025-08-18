@@ -4,9 +4,11 @@ using BankMore.Transferencia.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
+using SQLitePCL;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+Batteries.Init();
 
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<EfetuarTransferenciaCommand>());
@@ -56,8 +58,8 @@ using (var scope = app.Services.CreateScope())
             Id TEXT PRIMARY KEY,
             ContaOrigemId TEXT NOT NULL,
             NumeroContaDestino INTEGER NOT NULL,
-            Valor REAL NOT NULL,
-            DataRegistro TEXT NOT NULL
+            Valor DECIMAL(18,2) NOT NULL,
+            DataCriacao TEXT NOT NULL
         );
     ";
     cmd.ExecuteNonQuery();
