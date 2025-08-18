@@ -1,24 +1,26 @@
-using BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
+﻿using BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
 using BankMore.Transferencia.Domain.Interfaces;
 using BankMore.Transferencia.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<EfetuarTransferenciaCommand>());
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssemblyContaining<EfetuarTransferenciaCommand>());
 
 builder.Services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();
 
 builder.Services.AddHttpClient("ContaCorrenteApi", client =>
 {
-    client.BaseAddress = new Uri(builder.Configuration["ContaCorrenteApi:BaseUrl"] ?? "http://localhost:5001/");
+    client.BaseAddress = new Uri(builder.Configuration["ContaCorrenteApi:BaseUrl"]
+        ?? "http://localhost:5001/");
 });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
 builder.Services.AddControllers();
 
 var jwtSecret = builder.Configuration["Jwt:Secret"]!;
@@ -42,6 +44,25 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    using var connection = new SqliteConnection(connectionString);
+    connection.Open();
+
+    var cmd = connection.CreateCommand();
+    cmd.CommandText = @"
+        CREATE TABLE IF NOT EXISTS TransferenciaRegistro (
+            Id TEXT PRIMARY KEY,
+            ContaOrigemId TEXT NOT NULL,
+            NumeroContaDestino INTEGER NOT NULL,
+            Valor REAL NOT NULL,
+            DataRegistro TEXT NOT NULL
+        );
+    ";
+    cmd.ExecuteNonQuery();
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -51,7 +72,5 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();

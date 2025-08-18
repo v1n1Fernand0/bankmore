@@ -1,7 +1,7 @@
-﻿using MediatR;
-using BankMore.Shared;
+﻿using BankMore.ContaCorrente.Domain.Entities;
 using BankMore.ContaCorrente.Domain.Interfaces;
-using BankMore.ContaCorrente.Domain.Entities;
+using BankMore.Shared;
+using MediatR;
 
 namespace BankMore.ContaCorrente.Application.Commands.MovimentarConta;
 
@@ -10,48 +10,54 @@ public sealed class MovimentarContaHandler
 {
     private readonly IContaCorrenteRepository _contas;
     private readonly IMovimentoRepository _movimentos;
-    private readonly IIdempotenciaRepository _idempotencia;
 
     public MovimentarContaHandler(
         IContaCorrenteRepository contas,
-        IMovimentoRepository movimentos,
-        IIdempotenciaRepository idempotencia)
+        IMovimentoRepository movimentos)
     {
         _contas = contas;
         _movimentos = movimentos;
-        _idempotencia = idempotencia;
     }
 
     public async Task<Result<Unit>> Handle(MovimentarContaCommand request, CancellationToken ct)
     {
-        var idem = await _idempotencia.ObterAsync(request.Idempotencia);
-        if (idem is not null)
+        var movimentoExistente = await _movimentos.ObterPorIdempotenciaAsync(request.Idempotencia);
+        if (movimentoExistente is not null)
             return Result<Unit>.Ok(Unit.Value);
 
-        var conta = request.NumeroConta.HasValue
-            ? await _contas.ObterPorNumeroAsync(request.NumeroConta.Value)
-            : await _contas.ObterPorIdAsync(request.IdContaLogada);
+        var conta = await _contas.ObterPorIdAsync(request.ContaId);
+        if (conta is null || !conta.Ativo)
+            return Result<Unit>.Fail("ACCOUNT_NOT_FOUND_OR_INACTIVE");
 
-        if (conta is null)
-            return Result<Unit>.Fail("INVALID_ACCOUNT: Conta não encontrada");
+        if (request.Tipo == "D")
+        {
+            var movimentosConta = await _movimentos.ObterPorContaAsync(conta.IdContaCorrente);
 
-        if (!conta.Ativo)
-            return Result<Unit>.Fail("INACTIVE_ACCOUNT: Conta está inativa");
+            decimal saldo = 0;
+            foreach (var mov in movimentosConta)
+            {
+                if (mov.Tipo == "C")
+                    saldo += mov.Valor;
+                else if (mov.Tipo == "D")
+                    saldo -= mov.Valor;
+            }
 
-        if (request.Valor <= 0)
-            return Result<Unit>.Fail("INVALID_VALUE: Valor deve ser positivo");
+            if (saldo < request.Valor)
+                return Result<Unit>.Fail("INSUFFICIENT_FUNDS");
+        }
+        else if (request.Tipo != "C")
+        {
+            return Result<Unit>.Fail("INVALID_OPERATION");
+        }
 
-        if (request.TipoMovimento != 'C' && request.TipoMovimento != 'D')
-            return Result<Unit>.Fail("INVALID_TYPE: Tipo inválido");
+        var movimento = new Movimento(
+            request.ContaId,
+            request.Idempotencia,
+            request.Valor,
+            request.Tipo
+        );
 
-        if (request.NumeroConta.HasValue && request.NumeroConta.Value != conta.Numero && request.TipoMovimento != 'C')
-            return Result<Unit>.Fail("INVALID_TYPE: Apenas crédito permitido em conta destino");
-
-        var movimento = new Movimento(conta.IdContaCorrente, request.TipoMovimento, request.Valor);
         await _movimentos.AdicionarAsync(movimento);
-
-        var novoIdem = new Idempotencia(request.Idempotencia, "req", "ok");
-        await _idempotencia.SalvarAsync(novoIdem);
 
         return Result<Unit>.Ok(Unit.Value);
     }

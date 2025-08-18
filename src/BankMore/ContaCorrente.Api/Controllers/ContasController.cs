@@ -1,5 +1,4 @@
-﻿using BankMore.ContaCorrente.Api.Requests;
-using BankMore.ContaCorrente.Application.Commands.CadastrarConta;
+﻿using BankMore.ContaCorrente.Application.Commands.CadastrarConta;
 using BankMore.ContaCorrente.Application.Commands.InativarConta;
 using BankMore.ContaCorrente.Application.Commands.Login;
 using BankMore.ContaCorrente.Application.Commands.MovimentarConta;

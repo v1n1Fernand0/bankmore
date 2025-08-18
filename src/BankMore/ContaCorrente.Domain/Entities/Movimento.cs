@@ -2,20 +2,22 @@
 
 public class Movimento
 {
-    public Guid IdMovimento { get; private set; }
-    public Guid IdContaCorrente { get; private set; }
-    public DateTime DataMovimento { get; private set; }
-    public char TipoMovimento { get; private set; } 
+    public Guid Id { get; private set; }
+    public Guid ContaId { get; private set; }
+    public Guid Idempotencia { get; private set; }
     public decimal Valor { get; private set; }
+    public string Tipo { get; private set; }  
+    public DateTime DataCriacao { get; private set; }
 
     private Movimento() { }
 
-    public Movimento(Guid idContaCorrente, char tipo, decimal valor)
+    public Movimento(Guid contaId, Guid idempotencia, decimal valor, string tipo)
     {
-        IdMovimento = Guid.NewGuid();
-        IdContaCorrente = idContaCorrente;
-        DataMovimento = DateTime.UtcNow;
-        TipoMovimento = tipo;
+        Id = Guid.NewGuid();
+        ContaId = contaId;
+        Idempotencia = idempotencia;
         Valor = valor;
+        Tipo = tipo;
+        DataCriacao = DateTime.UtcNow;
     }
 }

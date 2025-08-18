@@ -31,9 +31,9 @@ public sealed class ObterSaldoHandler
         decimal saldo = 0;
         foreach (var mov in movimentos)
         {
-            if (mov.TipoMovimento == 'C')
+            if (mov.Tipo == "C")
                 saldo += mov.Valor;
-            else if (mov.TipoMovimento == 'D')
+            else if (mov.Tipo == "D")
                 saldo -= mov.Valor;
         }
 

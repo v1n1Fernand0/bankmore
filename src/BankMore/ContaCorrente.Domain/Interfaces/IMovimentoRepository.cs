@@ -4,6 +4,9 @@ namespace BankMore.ContaCorrente.Domain.Interfaces;
 
 public interface IMovimentoRepository
 {
-    Task<IEnumerable<Movimento>> ObterPorContaAsync(Guid idContaCorrente);
+    Task<Movimento?> ObterPorIdempotenciaAsync(Guid idempotencia);
+
+    Task<IEnumerable<Movimento>> ObterPorContaAsync(Guid contaId);
+
     Task AdicionarAsync(Movimento movimento);
 }

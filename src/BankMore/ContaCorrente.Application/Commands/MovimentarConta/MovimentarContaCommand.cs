@@ -1,12 +1,12 @@
-﻿using MediatR;
-using BankMore.Shared;
+﻿using BankMore.Shared;
+using MediatR;
 
 namespace BankMore.ContaCorrente.Application.Commands.MovimentarConta;
 
 public sealed record MovimentarContaCommand(
     Guid Idempotencia,
-    int? NumeroConta,
+    int? NumeroConta,  
     decimal Valor,
-    char TipoMovimento,
-    Guid IdContaLogada
+    string Tipo,      
+    Guid ContaId
 ) : IRequest<Result<Unit>>;
