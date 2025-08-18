@@ -1,58 +1,48 @@
 ﻿using BankMore.ContaCorrente.Domain.Entities;
 using BankMore.ContaCorrente.Domain.Interfaces;
 using Dapper;
-using Microsoft.Data.Sqlite;
-using Microsoft.Extensions.Configuration;
+using System.Data;
 
 namespace BankMore.ContaCorrente.Infrastructure.Repositories;
 
 public class MovimentoRepository : IMovimentoRepository
 {
-    private readonly string _connectionString;
+    private readonly IDbConnection _connection;
 
-    public MovimentoRepository(IConfiguration config)
+    public MovimentoRepository(IDbConnection connection)
     {
-        _connectionString = config.GetConnectionString("DefaultConnection")!;
-        EnsureTable();
-    }
-
-    private void EnsureTable()
-    {
-        using var connection = new SqliteConnection(_connectionString);
-        connection.Execute(@"
-            CREATE TABLE IF NOT EXISTS Movimento (
-                Id TEXT PRIMARY KEY,
-                ContaId TEXT NOT NULL,
-                Idempotencia TEXT NOT NULL UNIQUE,
-                Valor DECIMAL(18,2) NOT NULL,
-                Tipo TEXT NOT NULL,
-                DataCriacao TEXT NOT NULL,
-                FOREIGN KEY (ContaId) REFERENCES Conta(IdContaCorrente)
-            );");
+        _connection = connection;
     }
 
     public async Task<Movimento?> ObterPorIdempotenciaAsync(Guid idempotencia)
     {
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryFirstOrDefaultAsync<Movimento>(
+        return await _connection.QueryFirstOrDefaultAsync<Movimento>(
             "SELECT * FROM Movimento WHERE Idempotencia = @Idempotencia",
-            new { Idempotencia = idempotencia });
+            new { Idempotencia = idempotencia.ToString() } 
+        );
     }
 
     public async Task<IEnumerable<Movimento>> ObterPorContaAsync(Guid contaId)
     {
-        using var connection = new SqliteConnection(_connectionString);
-        return await connection.QueryAsync<Movimento>(
+        return await _connection.QueryAsync<Movimento>(
             "SELECT * FROM Movimento WHERE ContaId = @ContaId ORDER BY DataCriacao DESC",
-            new { ContaId = contaId });
+            new { ContaId = contaId.ToString() }  
+        );
     }
 
     public async Task AdicionarAsync(Movimento movimento)
     {
-        using var connection = new SqliteConnection(_connectionString);
-        await connection.ExecuteAsync(@"
+        await _connection.ExecuteAsync(@"
             INSERT INTO Movimento (Id, ContaId, Idempotencia, Valor, Tipo, DataCriacao)
             VALUES (@Id, @ContaId, @Idempotencia, @Valor, @Tipo, @DataCriacao)",
-            movimento);
+            new
+            {
+                Id = movimento.Id.ToString(),
+                ContaId = movimento.ContaId.ToString(),
+                Idempotencia = movimento.Idempotencia.ToString(),
+                Valor = movimento.Valor,
+                Tipo = movimento.Tipo,
+                DataCriacao = movimento.DataCriacao.ToString("s")
+            });
     }
 }
