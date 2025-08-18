@@ -19,7 +19,7 @@ public class IdempotenciaRepository : IIdempotenciaRepository
     {
         using var connection = new SqliteConnection(_connectionString);
 
-        var sql = "SELECT Chave, CriadoEm FROM Idempotencias WHERE Chave = @Chave LIMIT 1";
+        var sql = "SELECT Chave, DataCriacao FROM Idempotencias WHERE Chave = @Chave LIMIT 1";
         return await connection.QueryFirstOrDefaultAsync<Idempotencia>(sql, new { Chave = chave });
     }
 
@@ -27,7 +27,7 @@ public class IdempotenciaRepository : IIdempotenciaRepository
     {
         using var connection = new SqliteConnection(_connectionString);
 
-        var sql = "INSERT INTO Idempotencias (Chave, CriadoEm) VALUES (@Chave, @CriadoEm)";
+        var sql = "INSERT INTO Idempotencias (Chave, DataCriacao) VALUES (@Chave, @DataCriacao)";
         await connection.ExecuteAsync(sql, idempotencia);
     }
 }

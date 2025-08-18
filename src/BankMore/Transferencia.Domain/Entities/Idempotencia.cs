@@ -5,7 +5,7 @@ public sealed class Idempotencia
     public Guid Chave { get; private set; }
     public DateTime DataCriacao { get; private set; }
 
-    private Idempotencia() { } 
+    private Idempotencia() { }
 
     public Idempotencia(Guid chave)
     {

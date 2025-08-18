@@ -6,6 +6,8 @@ using Microsoft.Data.Sqlite;
 using Microsoft.IdentityModel.Tokens;
 using SQLitePCL;
 using System.Text;
+using Transferencia.Domain.Interfaces;
+using Transferencia.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 Batteries.Init();
@@ -14,6 +16,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<EfetuarTransferenciaCommand>());
 
 builder.Services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();
+builder.Services.AddScoped<IIdempotenciaRepository, IdempotenciaRepository>();
 
 builder.Services.AddHttpClient("ContaCorrenteApi", client =>
 {
@@ -54,11 +57,16 @@ using (var scope = app.Services.CreateScope())
 
     var cmd = connection.CreateCommand();
     cmd.CommandText = @"
-        CREATE TABLE IF NOT EXISTS TransferenciaRegistro (
+        CREATE TABLE IF NOT EXISTS Transferencias (
             Id TEXT PRIMARY KEY,
             ContaOrigemId TEXT NOT NULL,
             NumeroContaDestino INTEGER NOT NULL,
             Valor DECIMAL(18,2) NOT NULL,
+            Data TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS Idempotencias (
+            Chave TEXT PRIMARY KEY,
             DataCriacao TEXT NOT NULL
         );
     ";

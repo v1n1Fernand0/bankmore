@@ -20,11 +20,20 @@ public class TransferenciaRepository : ITransferenciaRepository
 
     public async Task AdicionarAsync(TransferenciaRegistro transferencia)
     {
-        const string sql = @"INSERT INTO transferencia 
-            (idtransferencia, idcontaorigem, idcontadestino, valor, data) 
-            VALUES (@IdTransferencia, @IdContaOrigem, @IdContaDestino, @Valor, @Data)";
+        const string sql = @"
+            INSERT INTO Transferencias 
+                (Id, ContaOrigemId, NumeroContaDestino, Valor, DataCriacao) 
+            VALUES 
+                (@Id, @ContaOrigemId, @NumeroContaDestino, @Valor, @DataCriacao);";
 
         using var conn = Connection;
-        await conn.ExecuteAsync(sql, transferencia);
+        await conn.ExecuteAsync(sql, new
+        {
+            transferencia.Id,
+            transferencia.ContaOrigemId,
+            transferencia.NumeroContaDestino,
+            transferencia.Valor,
+            DataCriacao = transferencia.DataCriacao
+        });
     }
 }
