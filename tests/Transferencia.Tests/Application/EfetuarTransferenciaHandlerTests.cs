@@ -1,15 +1,10 @@
-﻿using BankMore.Shared;
-using BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
+﻿using BankMore.Transferencia.Application.Commands.EfetuarTransferencia;
 using BankMore.Transferencia.Domain.Entities;
 using BankMore.Transferencia.Domain.Interfaces;
 using FluentAssertions;
 using Moq;
 using Moq.Protected;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using Xunit;
 
 public class EfetuarTransferenciaHandlerTests
 {

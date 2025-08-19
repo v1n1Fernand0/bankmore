@@ -1,4 +1,5 @@
 ﻿using BankMore.Transferencia.Domain.Entities;
+using BankMore.Shared.Dapper;               
 using Dapper;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -9,35 +10,39 @@ using Xunit;
 
 public class IdempotenciaRepositoryTests : IDisposable
 {
-    private readonly SqliteConnection _connection;
+    private const string Cs = "Data Source=file:bankmore-tests-idem?mode=memory&cache=shared";
+
+    private readonly SqliteConnection _rootConn; 
     private readonly IdempotenciaRepository _repository;
-    private readonly string _connectionString = "DataSource=:memory:";
 
     public IdempotenciaRepositoryTests()
     {
+        DapperGuidHandlersBootstrap.EnsureRegistered();
+
         Batteries.Init();
 
-        _connection = new SqliteConnection(_connectionString);
-        _connection.Open();
+        _rootConn = new SqliteConnection(Cs);
+        _rootConn.Open();
 
-        CriarTabelas();
+        CriarTabelas(_rootConn);
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "ConnectionStrings:DefaultConnection", _connectionString }
+                ["ConnectionStrings:DefaultConnection"] = Cs
             })
             .Build();
 
         _repository = new IdempotenciaRepository(configuration);
     }
 
-    private void CriarTabelas()
+    private static void CriarTabelas(SqliteConnection conn)
     {
-        _connection.Execute(@"
+        conn.Execute("PRAGMA foreign_keys = ON;");
+        conn.Execute(@"
             CREATE TABLE IF NOT EXISTS Idempotencias (
                 Chave TEXT PRIMARY KEY,
-                CriadoEm TEXT NOT NULL
+                DataCriacao TEXT NOT NULL
             );
         ");
     }
@@ -46,7 +51,7 @@ public class IdempotenciaRepositoryTests : IDisposable
     public async Task Deve_Salvar_E_Obter_Idempotencia()
     {
         var chave = Guid.NewGuid();
-        var idempotencia = new Idempotencia(chave);
+        var idempotencia = new Idempotencia(chave); 
 
         await _repository.SalvarAsync(idempotencia);
         var encontrado = await _repository.ObterAsync(chave);
@@ -55,8 +60,5 @@ public class IdempotenciaRepositoryTests : IDisposable
         encontrado!.Chave.Should().Be(chave);
     }
 
-    public void Dispose()
-    {
-        _connection.Dispose();
-    }
+    public void Dispose() => _rootConn.Dispose(); 
 }

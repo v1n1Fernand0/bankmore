@@ -1,5 +1,6 @@
 ﻿using BankMore.Transferencia.Domain.Entities;
 using BankMore.Transferencia.Infrastructure.Repositories;
+using BankMore.Shared.Dapper;            
 using Dapper;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
@@ -9,32 +10,36 @@ using Xunit;
 
 public class TransferenciaRepositoryTests : IDisposable
 {
-    private readonly SqliteConnection _connection;
+    private const string Cs = "Data Source=file:bankmore-tests-transf?mode=memory&cache=shared";
+
+    private readonly SqliteConnection _rootConn;
     private readonly TransferenciaRepository _repository;
-    private readonly string _connectionString = "DataSource=:memory:";
 
     public TransferenciaRepositoryTests()
     {
+        DapperGuidHandlersBootstrap.EnsureRegistered();
+
         Batteries.Init();
 
-        _connection = new SqliteConnection(_connectionString);
-        _connection.Open();
+        _rootConn = new SqliteConnection(Cs);
+        _rootConn.Open();
 
-        CriarTabelas();
+        CriarTabelas(_rootConn);
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                { "ConnectionStrings:DefaultConnection", _connectionString }
+                ["ConnectionStrings:DefaultConnection"] = Cs
             })
             .Build();
 
         _repository = new TransferenciaRepository(configuration);
     }
 
-    private void CriarTabelas()
+    private static void CriarTabelas(SqliteConnection conn)
     {
-        _connection.Execute(@"
+        conn.Execute("PRAGMA foreign_keys = ON;");
+        conn.Execute(@"
             CREATE TABLE IF NOT EXISTS Transferencias (
                 Id TEXT PRIMARY KEY,
                 ContaOrigemId TEXT NOT NULL,
@@ -51,22 +56,19 @@ public class TransferenciaRepositoryTests : IDisposable
         var transferencia = new TransferenciaRegistro(
             Guid.NewGuid(),
             123456,
-            200
+            200m
         );
 
         await _repository.AdicionarAsync(transferencia);
 
-        var encontrada = await _connection.QueryFirstOrDefaultAsync<TransferenciaRegistro>(
+        var encontrada = await _rootConn.QueryFirstOrDefaultAsync<TransferenciaRegistro>(
             "SELECT * FROM Transferencias WHERE Id = @Id",
             new { transferencia.Id });
 
         encontrada.Should().NotBeNull();
-        encontrada!.Valor.Should().Be(200);
+        encontrada!.Valor.Should().Be(200m);
         encontrada.NumeroContaDestino.Should().Be(123456);
     }
 
-    public void Dispose()
-    {
-        _connection.Dispose();
-    }
+    public void Dispose() => _rootConn.Dispose();
 }
